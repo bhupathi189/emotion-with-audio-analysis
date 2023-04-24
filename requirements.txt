@@ -3,3 +3,6 @@ numpy
 sklearn
 librosa
 soundfile
+boto3
+keras
+tensorflow
