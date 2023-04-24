@@ -24,7 +24,7 @@ app = Flask(__name__)
 obj = boto3.client(
     "s3",
     aws_access_key_id="AKIA23X2YQJO5QNCW6LY",
-    aws_secret_access_key="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"
+    aws_secret_access_key=""
     # ,    aws_session_token=SESSION_TOKEN
 )
 
