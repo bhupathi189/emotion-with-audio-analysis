@@ -11,8 +11,8 @@ from IPython.display import Audio
 from tensorflow import keras
 from flask import Flask, render_template, request
 import boto3
-
 import warnings
+import random
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -23,8 +23,8 @@ app = Flask(__name__)
 
 obj = boto3.client(
     "s3",
-    aws_access_key_id="AKIA23X2YQJO5QNCW6LY",
-    aws_secret_access_key="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"
+    aws_access_key_id="",
+    aws_secret_access_key=""
     # ,    aws_session_token=SESSION_TOKEN
 )
 
@@ -100,40 +100,74 @@ Y = encoder.fit_transform(np.array(Y).reshape(-1, 1)).toarray()
 
 @app.route("/predict", methods=["POST"])
 def predict_placement():
-    file_name = request.headers["name"]
+    try:
+        file_name = request.headers["name"]
 
-    # Downloading a csv file
-    # from S3 bucket to local folder
-    obj.download_file(
-        Filename="./AudioFiles/" + file_name,
-        Bucket="sagemaker-audio-files",
-        Key=file_name,
-    )
-    src = "./AudioFiles/" + file_name
-    data, sample_rate = librosa.load(src)
-    Feature_list = get_features(src, sample_rate)
+        # Downloading a csv file
+        # from S3 bucket to local folder
+        obj.download_file(
+            Filename="./AudioFiles/" + file_name,
+            Bucket="sagemaker-audio-files",
+            Key=file_name,
+        )
+        src = "./AudioFiles/" + file_name
+        data, sample_rate = librosa.load(src)
+        Feature_list = get_features(src, sample_rate)
 
-    scaler = pickle.load(open("scaler.pkl", "rb"))
-    loaded_model = load_model("savedmodel.h5")
-    # loaded_model.compile(optimizer = 'adam' , loss = 'categorical_crossentropy' , metrics = ['accuracy'])
+        scaler = pickle.load(open("scaler.pkl", "rb"))
+        loaded_model = load_model("savedmodel.h5")
+        # loaded_model.compile(optimizer = 'adam' , loss = 'categorical_crossentropy' , metrics = ['accuracy'])
 
-    print("Not scaled  --> ", Feature_list)
-    scaled_features = scaler.transform(Feature_list)
-    print("Scaled  --> ", scaled_features)
+        print("Not scaled  --> ", Feature_list)
+        scaled_features = scaler.transform(Feature_list)
+        print("Scaled  --> ", scaled_features)
 
-    scaled_features = pd.DataFrame(scaled_features)
-    Features = np.expand_dims(scaled_features, axis=2)
-    print(Features.shape)
+        scaled_features = pd.DataFrame(scaled_features)
+        Features = np.expand_dims(scaled_features, axis=2)
+        print(Features.shape)
 
-    predicted_feature = loaded_model.predict(Features)
-    print(predicted_feature)
+        predicted_feature = loaded_model.predict(Features)
+        print(predicted_feature)
 
-    y_pred = encoder.inverse_transform(predicted_feature)
+        y_pred = encoder.inverse_transform(predicted_feature)
 
-    print(y_pred.flatten())
+        print(y_pred.flatten())
 
-    Feature_list = []
-    return y_pred.flatten()[0]
+        Feature_list = []
+        return y_pred.flatten()[0]
+    except KeyError:
+        err = "Header is missing"
+        print(err)
+        return err
+    # except Exception:
+    #     err = "Error with AWS"
+    #     print(Exception.with_traceback(self, tb))
+    #     return err
+
+
+# 2nd endpoint to mock the service
+@app.route("/predictMock", methods=["POST"])
+def predict_mock():
+    try:
+        file_name = request.headers["name"]
+
+        val = random.randint(0, 7)
+        Y = [
+            "neutral",
+            "calm",
+            "happy",
+            "sad",
+            "angry",
+            "fearful",
+            "disgust",
+            "surprised",
+        ]
+
+        return Y[val]
+    except KeyError:
+        err = "Header is missing"
+        print(err)
+        return err
 
 
 # predicted_feature = loaded_model.predict(Feature_list[1])

@@ -5,4 +5,5 @@ librosa
 soundfile
 boto3
 keras
-tensorflow
+ipython
+# tensorflow
